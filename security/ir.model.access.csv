@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_financiera_interes_cuenta_financiera_interes_cuenta,financiera_interes_cuenta.financiera_interes_cuenta,model_financiera_interes_cuenta_financiera_interes_cuenta,,1,0,0,0
