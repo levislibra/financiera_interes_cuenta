@@ -76,110 +76,114 @@ class FinancieraDescubierto(models.Model):
 		date_start = datetime.strptime(self.date_start, "%Y-%m-%d")
 		date_finish = datetime.strptime(self.date_finish, "%Y-%m-%d")
 		i = 0
-		len_array_lines = len(array_lines)
-		interes_acumulado_mensual = 0
-		print array_lines
-		while i < len_array_lines:
-			line = array_lines[i]
-			current_date = line[0]
-			print "Current date"
-			print current_date			
-			# saldo = line[1]+line[2]
-			if line[1] == None and i > 0:
-				line[1] = array_lines[i-1][1]
-				print "asigamos saldo anterior"
-			if line[2] > 0:
-				# Hay que facturar
-				print "Capitalizamos y unificamos saldo"
-				line[1] += line[2]
-			fin_de_mes = datetime(current_date.year, current_date.month, calendar.monthrange(current_date.year, current_date.month)[1])
-			if current_date == fin_de_mes or current_date == date_finish:
-				if interes_acumulado_mensual > 0:
-					# Hay que facturar::::
-					self.generate_invoice(current_date, interes_acumulado_mensual)
-					interes_acumulado_mensual = 0
-			saldo = line[1]
-			print line
-			if saldo > 0:
-				# Esta debiendo dinero en cuenta
-				interes = round(saldo * self.rate_per_day, 2)
-				print "interes::"
-				print interes
-				interes_acumulado_mensual += interes
-				if self.capitalization == 'diaria':
-					if current_date < date_finish:
-						len_array_lines[i+1][2] += interes
-				elif self.capitalization == 'quincenal':
-					date_biweekly_capitalizacion = datetime(current_date.year, current_date.month, 15)
-					date_month_capitalizacion = datetime(current_date.year, current_date.month, calendar.monthrange(current_date.year, current_date.month)[1])
-					if current_date.month < 12:
-						date_biweekly_next_month_capitalizacion = datetime(current_date.year, current_date.month+1, 15)
-					elif current_date.month == 12:
-						date_biweekly_next_month_capitalizacion = datetime(current_date.year+1, 1, 15)
-					position = 0
-					if current_date < date_biweekly_capitalizacion:
-						if date_biweekly_capitalizacion <= date_finish:
-							print "es quincenal "
-							print date_biweekly_capitalizacion
-							position = date_biweekly_capitalizacion - date_start
+		if 'array_lines' in globals():
+			len_array_lines = len(array_lines)
+			interes_acumulado_mensual = 0
+			# print array_lines
+			while i < len_array_lines:
+				line = array_lines[i]
+				current_date = line[0]
+				# print "Current date"
+				# print current_date			
+				# saldo = line[1]+line[2]
+				fin_de_mes = datetime(current_date.year, current_date.month, calendar.monthrange(current_date.year, current_date.month)[1])
+				if current_date == fin_de_mes or current_date == date_finish:
+					if interes_acumulado_mensual > 0:
+						# Hay que facturar::::
+						self.generate_invoice(current_date, interes_acumulado_mensual)
+						interes_acumulado_mensual = 0
+						print "facturamos"
+				if line[1] == None and i > 0:
+					line[1] = array_lines[i-1][1]
+					print "asigamos saldo anterior"
+				if i > 0:
+					#print "Capitalizamos y unificamos saldo"
+					line[2] += array_lines[i-1][2]
+				#line[1] += line[2]
+				saldo = line[1] + line[2]
+				print line
+				if saldo > 0:
+					# Esta debiendo dinero en cuenta
+					interes = round(saldo * self.rate_per_day, 2)
+					print "interes::"
+					print interes
+					interes_acumulado_mensual += interes
+					if self.capitalization == 'diaria':
+						if current_date < date_finish:
+							array_lines[i+1][2] += interes
+					elif self.capitalization == 'quincenal':
+						date_biweekly_capitalizacion = datetime(current_date.year, current_date.month, 15)
+						date_month_capitalizacion = datetime(current_date.year, current_date.month, calendar.monthrange(current_date.year, current_date.month)[1])
+						if current_date.month < 12:
+							date_biweekly_next_month_capitalizacion = datetime(current_date.year, current_date.month+1, 15)
+						elif current_date.month == 12:
+							date_biweekly_next_month_capitalizacion = datetime(current_date.year+1, 1, 15)
+						position = 0
+						if current_date < date_biweekly_capitalizacion:
+							if date_biweekly_capitalizacion <= date_finish:
+								# print "es quincenal "
+								# print date_biweekly_capitalizacion
+								position = date_biweekly_capitalizacion - date_start
+							else:
+								# print "es date_finish quincenal"
+								# print date_finish
+								position = date_finish - date_start
+						elif current_date < date_month_capitalizacion:
+							if date_month_capitalizacion <= date_finish:
+								# print "es date_month_capitalizacion"
+								# print date_month_capitalizacion
+								position = date_month_capitalizacion - date_start
+							else:
+								# print "es date_finish mensual"
+								# print date_finish
+								position = date_finish - date_start
 						else:
-							print "es date_finish quincenal"
-							print date_finish
-							position = date_finish - date_start
-					elif current_date < date_month_capitalizacion:
-						if date_month_capitalizacion <= date_finish:
-							print "es date_month_capitalizacion"
-							print date_month_capitalizacion
-							position = date_month_capitalizacion - date_start
+							# La fecha evaluada es fin de mes
+							if date_biweekly_next_month_capitalizacion <= date_finish:
+								# print "es date_biweekly_next_month_capitalizacion"
+								# print date_biweekly_next_month_capitalizacion
+								position = date_biweekly_next_month_capitalizacion - date_start
+							else:
+								# print "es date_finish next biweekly month"
+								# print date_finish
+								position = date_finish - date_start
+						array_lines[position.days][2] += interes
+					elif self.capitalization == 'mensual':
+						date_month_capitalizacion = datetime(current_date.year, current_date.month, calendar.monthrange(current_date.year, current_date.month)[1])
+						if current_date.month < 12:
+							date_next_month_capitalizacion = datetime(current_date.year, current_date.month+1, calendar.monthrange(current_date.year, current_date.month+1)[1])
+						elif current_date.month == 12:
+							date_next_month_capitalizacion = datetime(current_date.year+1, 1, calendar.monthrange(current_date.year+1, 1)[1])
+						# print "posibles fechas"
+						# print date_month_capitalizacion
+						# print date_next_month_capitalizacion
+						# print date_finish
+						position = 0
+						if current_date < date_month_capitalizacion:
+							if date_month_capitalizacion <= date_finish:
+								# print "es date_month_capitalizacion"
+								# print date_month_capitalizacion
+								position = date_month_capitalizacion - date_start
+							else:
+								# print "es date_finish mensual"
+								# print date_finish
+								position = date_finish - date_start
 						else:
-							print "es date_finish mensual"
-							print date_finish
-							position = date_finish - date_start
-					else:
-						# La fecha evaluada es fin de mes
-						if date_biweekly_next_month_capitalizacion <= date_finish:
-							print "es date_biweekly_next_month_capitalizacion"
-							print date_biweekly_next_month_capitalizacion
-							position = date_biweekly_next_month_capitalizacion - date_start
-						else:
-							print "es date_finish next biweekly month"
-							print date_finish
-							position = date_finish - date_start
-					array_lines[position.days][2] += interes
-				elif self.capitalization == 'mensual':
-					date_month_capitalizacion = datetime(current_date.year, current_date.month, calendar.monthrange(current_date.year, current_date.month)[1])
-					if current_date.month < 12:
-						date_next_month_capitalizacion = datetime(current_date.year, current_date.month+1, calendar.monthrange(current_date.year, current_date.month)[1])
-					elif current_date.month == 12:
-						date_next_month_capitalizacion = datetime(current_date.year+1, 1, calendar.monthrange(current_date.year+1, 1)[1])
-					print "posibles fechas"
-					print date_month_capitalizacion
-					print date_next_month_capitalizacion
-					print date_finish
-					position = 0
-					if current_date < date_month_capitalizacion:
-						if date_month_capitalizacion <= date_finish:
-							print "es date_month_capitalizacion"
-							print date_month_capitalizacion
-							position = date_month_capitalizacion - date_start
-						else:
-							print "es date_finish mensual"
-							print date_finish
-							position = date_finish - date_start
-					else:
-						# La fecha evaluada es fin de mes
-						if date_next_month_capitalizacion <= date_finish:
-							print "es date_biweekly_next_month_capitalizacion"
-							print date_next_month_capitalizacion
-							position = date_next_month_capitalizacion - date_start
-						else:
-							print "es date_finish month"
-							print date_finish
-							position = date_finish - date_start
-					print "position::"
-					print position.days
-					array_lines[position.days][2] += interes
-			i += 1
+							# La fecha evaluada es fin de mes
+							if date_next_month_capitalizacion <= date_finish:
+								# print "es date_biweekly_next_month_capitalizacion"
+								# print date_next_month_capitalizacion
+								position = date_next_month_capitalizacion - date_start
+							else:
+								# print "es date_finish month"
+								# print date_finish
+								position = date_finish - date_start
+						# print "position::"
+						# print position.days
+						array_lines[position.days][2] += interes
+				i += 1
+		else:
+			raise ValidationError('Envie a borrador y vuelva a computar.')
 
 	@api.one
 	def generate_invoice(self, date, amount):
@@ -222,9 +226,9 @@ class FinancieraDescubierto(models.Model):
 			    'invoice_line_ids': ail_ids,
 			}
 			new_invoice_id = self.env['account.invoice'].create(ai_values)
-			# if automatic_validate:
-			# 	if not self.journal_id.use_documents:
-			# 		new_invoice_id.signal_workflow('invoice_open')
+			if automatic_validate:
+				if not self.journal_id.use_documents:
+					new_invoice_id.signal_workflow('invoice_open')
 			self.invoice_ids = [new_invoice_id.id]
 
 
