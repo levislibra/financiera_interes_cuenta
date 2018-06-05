@@ -25,9 +25,11 @@
       <field name="arch" type="xml">
         <form>
           <header>
+            <button name="create_saldo_mes" class="oe_highlight" string="Comprobar meses" type="object" />
             <button name="procesar" class="oe_highlight" states="borrador" string="Computar interes" type="object" />
-            <button name="draft" states="procesando" string="A borrador" type="object" />
+            <button name="draft" states="procesando,cancelado" string="A borrador" type="object" />
             <button name="wizard_descubierto_facturar" states="procesando" string="Facturar" type="object" class="oe_highlight" />
+            <button name="wizard_cancelar" states="facturado" string="Cancelar" type="object" />
             <field name="state" widget="statusbar"/>
           </header>
           <sheet>
@@ -84,7 +86,6 @@
       </field>
     </record>
 
-
     <!-- actions opening views on models -->
     
     <record model="ir.actions.act_window" id="financiera_descubierto_list_action">
@@ -96,6 +97,46 @@
 
     <!-- Top menu item -->
     <menuitem name="Interes en cuenta" web_icon="financiera_interes_cuenta,static/description/icon.png" id="menu_financiera_descubierto" action="financiera_descubierto_list_action"/>
+
+    <!-- Vista Form Partner -->
+
+    <record id="partner_form_cuenta_corriente_inherited"  model="ir.ui.view">
+      <field name="name">Extension Partner form</field>
+      <field name="model">res.partner</field>
+      <field name="inherit_id" ref="base.view_partner_form"/>
+      <field name="arch" type="xml">
+        <xpath expr="//page[3]" position='before'>
+          <page string='Interes en cuenta'>
+            <group string="Informacion por defecto">
+              <field name="last_date_compute_interes"/>
+              <field name="date_first_move"/>
+              <field name="capitalization"/>
+              <field name="rate_per_day"/>
+              <field name="compute_fin_mes"/>
+              <field name="journal_fin_de_mes" attrs="{'invisible': [('compute_fin_mes', '=', False)], 'required': [('compute_fin_mes', '=', True)]}"/>
+            </group>
+          </page>
+        </xpath>
+      </field>
+    </record>
+
+
+    <!-- Vista Tree Account Debt Line -->
+
+    <record id="account_tree_inherited"  model="ir.ui.view">
+      <field name="name">Extension Acc Move Line Tree</field>
+      <field name="model">account.move.line</field>
+      <field name="inherit_id" ref="financiera_base.view_ctacte_cliente"/>
+      <field name="arch" type="xml">
+        <xpath expr="//field[@name='total_balance_receivable']" position="after">
+          <field name="interes_no_consolidado_amount" sum="Intereses"/>
+          <field name="interes_computado"/>
+          <field name="interes_no_consolidado_acumulado"/>
+          <field name="dias"/>
+          <field name="balance_anterior"/>
+        </xpath>
+      </field>
+    </record>
 
   </data>
 </openerp>

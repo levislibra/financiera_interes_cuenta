@@ -21,4 +21,20 @@
         </field>
     </record>
 
+    <record id="cancelar_descubierto_wizard" model="ir.ui.view">
+        <field name="name">Cancelar descubierto</field>
+        <field name="model">financiera.descubierto.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <span>Seguro que desea cancelar el descubierto. Cancelara todas las facturas generadas.</span>
+                </group>
+                <footer>
+                    <button name="cancelar_descubierto" string="Confirmar" class="oe_right oe_highlight" type="object"/>
+                    <button string="Cancel" class="oe_right" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
 </odoo>
