@@ -114,9 +114,11 @@
               <field name="rate_per_day"/>
               <field name="compute_fin_mes"/>
               <field name="journal_fin_de_mes" attrs="{'invisible': [('compute_fin_mes', '=', False)], 'required': [('compute_fin_mes', '=', True)]}"/>
+              <label for="create_move_fin_de_mes" string=""/><h3><button name="create_move_fin_de_mes" string="Crear movimiento de fin de mes" type="object"/></h3>
             </group>
           </page>
         </xpath>
+
       </field>
     </record>
 
