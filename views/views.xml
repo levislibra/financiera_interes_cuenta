@@ -6,11 +6,11 @@
       <field name="name">Descubierto list</field>
       <field name="model">financiera.descubierto</field>
       <field name="arch" type="xml">
-        <tree>
+        <tree create="false" delete="false">
           <field name="date_invoice"/>
           <field name="partner_id"/>
           <field name="name"/>
-          <field name="amount"/>
+          <field name="amount" sum="Total"/>
           <field name="state"/>
         </tree>
       </field>
@@ -154,7 +154,7 @@
       <field name="arch" type="xml">
         <xpath expr="//field[@name='total_balance_receivable']" position="after">
           <field name="interes_no_consolidado_amount" sum="Intereses"/>
-          <field name="interes_computado"/>
+          <field name="interes_computado" readonly="1"/>
         </xpath>
       </field>
     </record>

@@ -124,7 +124,6 @@ class ExtendsAccountMoveLine(models.Model):
 
 	@api.multi
 	def _compute_interes_no_consolidado(self):
-		print "_compute_interes_no_consolidado**-*--*-*-"
 		if len(self) > 0:
 			line_base_id = self.env['account.move.line'].browse(self[0].id)
 			cr = self.env.cr
@@ -158,9 +157,15 @@ class ExtendsAccountMoveLine(models.Model):
 					# line_id.balance_anterior = balance
 					# line_id.dias = dias
 					if line_id.partner_id.capitalization == 'diaria':
-						line_id.interes_no_consolidado_amount = (balance + prev_interes_no_consolidado_acumulado) * ((line_id.partner_id.rate_per_day + 1)**dias -1)
+						if (balance + prev_interes_no_consolidado_acumulado) > 0:
+							line_id.interes_no_consolidado_amount = (balance + prev_interes_no_consolidado_acumulado) * ((line_id.partner_id.rate_per_day + 1)**dias -1)
+						else:
+							line_id.interes_no_consolidado_amount = 0
 					else:
-						line_id.interes_no_consolidado_amount = (balance + interes_mes_anterior) * line_id.partner_id.rate_per_day * dias
+						if (balance + interes_mes_anterior) > 0:
+							line_id.interes_no_consolidado_amount = (balance + interes_mes_anterior) * line_id.partner_id.rate_per_day * dias
+						else:
+							line_id.interes_no_consolidado_amount = 0
 					line_id.interes_no_consolidado_acumulado = prev_interes_no_consolidado_acumulado + line_id.interes_no_consolidado_amount
 					date_month = datetime(date_finish.year, date_finish.month, calendar.monthrange(date_finish.year, date_finish.month)[1])
 					if date_finish == date_month:
