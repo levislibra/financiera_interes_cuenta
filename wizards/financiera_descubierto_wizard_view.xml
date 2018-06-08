@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo>
 
-    <record id="descubierto_facturar_wizard" model="ir.ui.view">
+    <record id="facturar_multi_descubierto_wizard" model="ir.ui.view">
         <field name="name">Facturar descubierto</field>
         <field name="model">financiera.descubierto.wizard</field>
         <field name="arch" type="xml">
             <form>
                 <group>
                     <group>
+                        <field name="date_invoice"/>
                         <field name="journal_id" domain="[('type', '=', 'sale')]" required="1"/>
                     </group>
                     <group>
@@ -21,13 +22,22 @@
         </field>
     </record>
 
-    <record id="cancelar_descubierto_wizard" model="ir.ui.view">
+    <act_window id="action_facturar_decubierto"
+        name="Facturar descubierto"
+        src_model="account.move.line"
+        res_model="financiera.descubierto.wizard"
+        view_id="facturar_multi_descubierto_wizard"
+        view_type="form" view_mode="form"
+        key2="client_action_multi" target="new"
+        />
+
+    <record id="cancelar_multi_descubierto_wizard" model="ir.ui.view">
         <field name="name">Cancelar descubierto</field>
         <field name="model">financiera.descubierto.wizard</field>
         <field name="arch" type="xml">
             <form>
                 <group>
-                    <span>Seguro que desea cancelar el descubierto. Cancelara todas las facturas generadas.</span>
+                    <span>Seguro que desea cancelar el descubierto. Cancelara las facturas generadas.</span>
                 </group>
                 <footer>
                     <button name="cancelar_descubierto" string="Confirmar" class="oe_right oe_highlight" type="object"/>
@@ -36,5 +46,14 @@
             </form>
         </field>
     </record>
+
+    <act_window id="action_cancelar_decubierto"
+        name="Cancelar descubierto"
+        src_model="account.move.line"
+        res_model="financiera.descubierto.wizard"
+        view_id="cancelar_multi_descubierto_wizard"
+        view_type="form" view_mode="form"
+        key2="client_action_multi" target="new"
+        />
 
 </odoo>
