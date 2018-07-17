@@ -1,2 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_financiera_interes_cuenta_financiera_interes_cuenta,financiera_interes_cuenta.financiera_interes_cuenta,model_financiera_interes_cuenta_financiera_interes_cuenta,,1,0,0,0
+user_financiera_descubierto,financiera.descubierto,model_financiera_descubierto,financiera_interes_cuenta.user,1,1,1,0
+user_financiera_descubierto_config,financiera.descubierto.config,model_financiera_descubierto_config,financiera_interes_cuenta.user,1,1,1,0
