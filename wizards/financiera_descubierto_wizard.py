@@ -14,6 +14,15 @@ class FinancieraDescubiertoWizard(models.TransientModel):
 	journal_id = fields.Many2one('account.journal', string='Diario de Factura')
 	use_documents = fields.Boolean('Usa Documento', related='journal_id.use_documents', readonly=True)
 
+	@api.model
+	def default_get(self, fields):
+		rec = super(FinancieraDescubiertoWizard, self).default_get(fields)
+		context = dict(self._context or {})
+		active_id = context.get('active_id')
+		rec['date_invoice'] = self.env['account.move.line'].browse(active_id).date
+		return rec
+
+
 	@api.one
 	def facturar_descubierto(self):
 		context = dict(self._context or {})
