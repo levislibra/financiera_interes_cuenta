@@ -18,6 +18,7 @@ class FinancieraDescubiertoWizard(models.TransientModel):
 	def default_get(self, fields):
 		rec = super(FinancieraDescubiertoWizard, self).default_get(fields)
 		context = dict(self._context or {})
+		print context
 		active_id = context.get('active_id')
 		rec['date_invoice'] = self.env['account.move.line'].browse(active_id).date
 		return rec
@@ -25,8 +26,12 @@ class FinancieraDescubiertoWizard(models.TransientModel):
 
 	@api.one
 	def facturar_descubierto(self):
+		print "Facturar descubiertooooooooo"
 		context = dict(self._context or {})
+		print context
 		active_ids = context.get('active_ids')
+		print "active ids"
+		print active_ids
 		active_id = context.get('active_id')
 		partner_id = self.env['account.move.line'].browse(active_id).partner_id
 		fd_values = {
@@ -34,18 +39,23 @@ class FinancieraDescubiertoWizard(models.TransientModel):
 			'date_invoice': self.date_invoice,
 			'journal_id': self.journal_id.id,
 		}
-		new_financiera_descubierto_id = self.env['financiera.descubierto'].create(fd_values)
-		descubierto_id = new_financiera_descubierto_id
+		descubierto_id = self.env['financiera.descubierto'].create(fd_values)
+		# descubierto_id = new_financiera_descubierto_id
 		descubierto_id.line_ids = active_ids
 		amount = 0
-		date = None
-		for line_id in descubierto_id.line_ids:
-			# line_id = self.env['account.move.line'].browse(_id)
+		for _id in active_ids:
+			line_id = self.env['account.move.line'].browse(_id)
 			amount += line_id.interes_no_consolidado_amount
-			if date == None:
-				date = line_id.date
+			print line_id.date
+			print line_id.interes_no_consolidado_amount
+			# line_id.interes_computado = True
+		for _id in active_ids:
+			line_id = self.env['account.move.line'].browse(_id)
 			line_id.interes_computado = True
-		descubierto_id.generate_invoice(date, amount)
+		print "por ejecutar generate_invoice"
+		print self.date_invoice
+		print amount
+		descubierto_id.generate_invoice(self.date_invoice, amount)
 		descubierto_id.state = 'confirmado'
 
 	@api.multi

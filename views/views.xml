@@ -24,6 +24,7 @@
       <field name="arch" type="xml">
         <form create="false" delete="false" edit="false">
           <header>
+            <button name="cancelar_descubierto" string="Cancelar" type="object"/>
             <field name="state" widget="statusbar"/>
           </header>
           <sheet>
@@ -53,6 +54,10 @@
                     <field name="credit" sum="Haber" readonly="1"/>
                     <field name="total_balance_receivable" readonly="1"/>
                     <field name="interes_computado" readonly="1"/>
+                    <field name="dias" readonly="1"/>
+                    <field name="balance_anterior" readonly="1"/>
+                    <field name="interes_no_consolidado_acumulado_backup" readonly="1"/>
+                    <field name="interes_no_consolidado_amount_backup" readonly="1"/>
                   </tree>
                 </field>
               </page>

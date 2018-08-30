@@ -99,6 +99,18 @@ class FinancieraDescubierto(models.Model):
 			self.invoice_id = new_invoice_id.id
 			self.invoice_id.descubierto_id = self.id
 
+
+	@api.one
+	def cancelar_descubierto(self):
+		print "CANCELAR DESCUBIERTO"
+		for line_id in self.line_ids:
+			line_id.interes_computado = False
+				
+		self.state = 'cancelado'
+		if len(self.invoice_id) > 0 and self.invoice_id.state == 'open':
+			self.invoice_id.signal_workflow('invoice_cancel')
+
+
 class FinancieraDescubiertoConfig(models.Model):
 	_name = 'financiera.descubierto.config'
 
@@ -116,64 +128,13 @@ class ExtendsAccountMoveLine(models.Model):
 	_inherit = 'account.move.line'
 
 	descubierto_id = fields.Many2one('financiera.descubierto', 'Calculo de descubierto')
-	interes_no_consolidado_amount = fields.Monetary("Interes no consolidado", compute='_compute_interes_no_consolidado')
-	interes_no_consolidado_acumulado = fields.Monetary("Interes no consolidado acumulado", compute='_compute_interes_no_consolidado')
+	interes_no_consolidado_amount = fields.Monetary("Interes no consolidado")
+	interes_no_consolidado_amount_backup = fields.Monetary("Interes no consolidado")
+	interes_no_consolidado_acumulado = fields.Monetary("Interes no consolidado acumulado")
+	interes_no_consolidado_acumulado_backup = fields.Monetary("Interes no consolidado acumulado")
 	interes_computado = fields.Boolean(' ', default=False)
-	# dias = fields.Float('Dias', compute='_compute_interes_no_consolidado')
-	# balance_anterior = fields.Float('Balance', compute='_compute_interes_no_consolidado')
-
-	@api.multi
-	def _compute_interes_no_consolidado(self):
-		if len(self) > 0:
-			line_base_id = self.env['account.move.line'].browse(self[0].id)
-			cr = self.env.cr
-			uid = self.env.uid
-			move_line_obj = self.pool.get('account.move.line')
-			move_line_ids = move_line_obj.search(cr, uid, [
-				('partner_id', '=', line_base_id.partner_id.id),
-				('account_id', '=', line_base_id.account_id.id),
-			])
-			prev_line_id = None
-			balance = 0
-			i = len(move_line_ids)-1
-			interes_mes_anterior = 0
-			while i >= 0:
-				line_id = self.env['account.move.line'].browse(move_line_ids[i])
-				if not line_id.interes_computado:
-					date_finish = datetime.strptime(line_id.date, "%Y-%m-%d")
-					interes_no_consolidado_previo = 0
-					if i < len(move_line_ids)-1:
-						prev_line_id = self.env['account.move.line'].browse(move_line_ids[i+1])
-						date_start = datetime.strptime(prev_line_id.date, "%Y-%m-%d")
-						interes_no_consolidado_previo = prev_line_id.interes_no_consolidado_amount
-						balance = prev_line_id.total_balance_receivable
-						prev_interes_no_consolidado_acumulado = prev_line_id.interes_no_consolidado_acumulado
-					else:
-						date_start = date_finish
-						balance = 0
-						prev_interes_no_consolidado_acumulado = 0
-					dias = date_finish - date_start
-					dias = dias.days
-					# line_id.balance_anterior = balance
-					# line_id.dias = dias
-					if line_id.partner_id.capitalization == 'diaria':
-						if (balance + prev_interes_no_consolidado_acumulado) > 0:
-							line_id.interes_no_consolidado_amount = (balance + prev_interes_no_consolidado_acumulado) * ((line_id.partner_id.rate_per_day + 1)**dias -1)
-						else:
-							line_id.interes_no_consolidado_amount = 0
-					else:
-						if (balance + interes_mes_anterior) > 0:
-							line_id.interes_no_consolidado_amount = (balance + interes_mes_anterior) * line_id.partner_id.rate_per_day * dias
-						else:
-							line_id.interes_no_consolidado_amount = 0
-					line_id.interes_no_consolidado_acumulado = prev_interes_no_consolidado_acumulado + line_id.interes_no_consolidado_amount
-					date_month = datetime(date_finish.year, date_finish.month, calendar.monthrange(date_finish.year, date_finish.month)[1])
-					if date_finish == date_month:
-						interes_mes_anterior = line_id.interes_no_consolidado_acumulado
-				else:
-					line_id.interes_no_consolidado_acumulado = 0
-					line_id.interes_no_consolidado_amount = 0
-				i -= 1
+	dias = fields.Float('Dias')
+	balance_anterior = fields.Float('Balance')
 
 
 class ExtendsAccountMove(models.Model):
@@ -189,7 +150,7 @@ class ExtendsAccountInvoice(models.Model):
 	descubierto_id = fields.Many2one('financiera.descubierto', 'Calculo de descubierto')
 
 class ExtendsResPartner(models.Model):
-	_name = 'res.partner'
+	# _name = 'res.partner'
 	_inherit = 'res.partner'
 
 	last_date_compute_interes = fields.Date('Ultima fecha de interes computado', default=False)
@@ -262,3 +223,69 @@ class ExtendsResPartner(models.Model):
 					date_finish_month = datetime(date_finish_month.year+1, 1, 31)
 				else:
 					date_finish_month = datetime(date_finish_month.year, date_finish_month.month+1, calendar.monthrange(date_finish_month.year, date_finish_month.month+1)[1])
+
+	@api.multi
+	def ver_ctacte_cliente(self):
+		rec = super(ExtendsResPartner, self).ver_ctacte_cliente()
+		cr = self.env.cr
+		uid = self.env.uid
+		print "holaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa----------************"
+		self._compute_interes_no_consolidado()
+		print "Chauuuuuuuuuuuuuuuuuuuuuuuuuu"
+		return rec
+
+	def _compute_interes_no_consolidado(self):
+		cr = self.env.cr
+		uid = self.env.uid
+		move_line_obj = self.pool.get('account.move.line')
+		move_line_ids = move_line_obj.search(cr, uid, [
+			('partner_id', '=', self.id),
+			('account_id', '=', self.property_account_receivable_id.id),
+		])
+		# move_line_ids = ids
+		# print self.move_line_ids
+		prev_line_id = None
+		balance = 0
+		i = len(move_line_ids)-1
+		interes_mes_anterior = 0
+		while i >= 0:
+			line_id = self.env['account.move.line'].browse(move_line_ids[i])
+			if not line_id.interes_computado:
+				date_finish = datetime.strptime(line_id.date, "%Y-%m-%d")
+				interes_no_consolidado_previo = 0
+				if i < len(move_line_ids)-1:
+					prev_line_id = self.env['account.move.line'].browse(move_line_ids[i+1])
+					date_start = datetime.strptime(prev_line_id.date, "%Y-%m-%d")
+					interes_no_consolidado_previo = prev_line_id.interes_no_consolidado_amount
+					balance = prev_line_id.total_balance_receivable
+					prev_interes_no_consolidado_acumulado = prev_line_id.interes_no_consolidado_acumulado
+				else:
+					date_start = date_finish
+					balance = 0
+					prev_interes_no_consolidado_acumulado = 0
+				dias = date_finish - date_start
+				dias = dias.days
+				line_id.dias = dias
+				if line_id.partner_id.capitalization == 'diaria':
+					if (balance + prev_interes_no_consolidado_acumulado) > 0:
+						line_id.balance_anterior = balance + prev_interes_no_consolidado_acumulado
+						line_id.interes_no_consolidado_amount = (balance + prev_interes_no_consolidado_acumulado) * ((line_id.partner_id.rate_per_day + 1)**dias -1)
+						line_id.interes_no_consolidado_amount_backup = line_id.interes_no_consolidado_amount
+					else:
+						line_id.interes_no_consolidado_amount = 0
+				else:
+					if (balance + interes_mes_anterior) > 0:
+						line_id.balance_anterior = balance + interes_mes_anterior
+						line_id.interes_no_consolidado_amount = (balance + interes_mes_anterior) * line_id.partner_id.rate_per_day * dias
+						line_id.interes_no_consolidado_amount_backup = line_id.interes_no_consolidado_amount
+					else:
+						line_id.interes_no_consolidado_amount = 0
+				line_id.interes_no_consolidado_acumulado = prev_interes_no_consolidado_acumulado + line_id.interes_no_consolidado_amount
+				line_id.interes_no_consolidado_acumulado_backup = line_id.interes_no_consolidado_acumulado
+				date_month = datetime(date_finish.year, date_finish.month, calendar.monthrange(date_finish.year, date_finish.month)[1])
+				if date_finish == date_month:
+					interes_mes_anterior = line_id.interes_no_consolidado_acumulado
+			else:
+				line_id.interes_no_consolidado_acumulado = 0
+				line_id.interes_no_consolidado_amount = 0
+			i -= 1
