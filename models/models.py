@@ -19,7 +19,7 @@ class FinancieraDescubierto(models.Model):
 	vat_tax_id = fields.Many2one('account.tax', 'Tasa de IVA', domain="[('type_tax_use', '=', 'sale')]")
 	line_ids = fields.One2many('account.move.line', 'descubierto_id', 'Lineas')
 	automatic_validate = fields.Boolean('Validacion automatica de facturas', default=False)
-	capitalization = fields.Selection([('diaria', 'Diaria'), ('quincenal', 'Quincenal'), ('mensual', 'Mensual')], string='Capitalizacion', required=True, default='mensual')
+	capitalization = fields.Selection([('diaria', 'Diaria'), ('mensual', 'Mensual'), ('saldo', 'Saldo Previo')], string='Capitalizacion', required=True, default='mensual')
 	rate_per_day = fields.Float('Tasa diaria', digits=(16,6))
 	journal_id = fields.Many2one('account.journal', 'Diario de factura')
 	move_ids = fields.One2many('account.move', 'descubierto_id', 'Asientos')
@@ -30,13 +30,8 @@ class FinancieraDescubierto(models.Model):
 	
 	@api.model
 	def create(self, values):
-		print "Creamos financiera.descubierto"
 		rec = super(FinancieraDescubierto, self).create(values)
 		config_id = self.env['financiera.descubierto.config'].browse(1)
-		print 'capitalization'
-		print rec.partner_id.capitalization
-		print 'rate_per_day'
-		print rec.partner_id.rate_per_day
 		capitalization = config_id.capitalization
 		rate_per_day = config_id.rate_per_day
 		journal_id = rec.journal_id
@@ -102,7 +97,6 @@ class FinancieraDescubierto(models.Model):
 
 	@api.one
 	def cancelar_descubierto(self):
-		print "CANCELAR DESCUBIERTO"
 		for line_id in self.line_ids:
 			line_id.interes_computado = False
 				
@@ -159,7 +153,7 @@ class ExtendsResPartner(models.Model):
 	date_first_move = fields.Date('Primer movimiento', compute='_compute_date_first_move')
 	compute_fin_mes = fields.Boolean('Movimientos de fin de mes', default=False)
 	journal_fin_de_mes = fields.Many2one('account.journal', 'Diario de saldos')
-	capitalization = fields.Selection([('diaria', 'Diaria'), ('mensual', 'Mensual')], string='Capitalizacion', required=True, default='mensual')
+	capitalization = fields.Selection([('diaria', 'Diaria'), ('mensual', 'Mensual'), ('saldo', 'Saldo Previo')], string='Capitalizacion', required=True, default='mensual')
 	rate_per_day = fields.Float('Tasa diaria', digits=(16,6))
 
 	@api.one
@@ -227,11 +221,7 @@ class ExtendsResPartner(models.Model):
 	@api.multi
 	def ver_ctacte_cliente(self):
 		rec = super(ExtendsResPartner, self).ver_ctacte_cliente()
-		cr = self.env.cr
-		uid = self.env.uid
-		print "holaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa----------************"
 		self._compute_interes_no_consolidado()
-		print "Chauuuuuuuuuuuuuuuuuuuuuuuuuu"
 		return rec
 
 	def _compute_interes_no_consolidado(self):
@@ -242,8 +232,6 @@ class ExtendsResPartner(models.Model):
 			('partner_id', '=', self.id),
 			('account_id', '=', self.property_account_receivable_id.id),
 		])
-		# move_line_ids = ids
-		# print self.move_line_ids
 		prev_line_id = None
 		balance = 0
 		i = len(move_line_ids)-1
@@ -273,10 +261,17 @@ class ExtendsResPartner(models.Model):
 						line_id.interes_no_consolidado_amount_backup = line_id.interes_no_consolidado_amount
 					else:
 						line_id.interes_no_consolidado_amount = 0
-				else:
+				elif line_id.partner_id.capitalization == 'mensual':
 					if (balance + interes_mes_anterior) > 0:
 						line_id.balance_anterior = balance + interes_mes_anterior
 						line_id.interes_no_consolidado_amount = (balance + interes_mes_anterior) * line_id.partner_id.rate_per_day * dias
+						line_id.interes_no_consolidado_amount_backup = line_id.interes_no_consolidado_amount
+					else:
+						line_id.interes_no_consolidado_amount = 0
+				elif line_id.partner_id.capitalization == 'saldo':
+					if balance > 0:
+						line_id.balance_anterior = balance
+						line_id.interes_no_consolidado_amount = balance * line_id.partner_id.rate_per_day * dias
 						line_id.interes_no_consolidado_amount_backup = line_id.interes_no_consolidado_amount
 					else:
 						line_id.interes_no_consolidado_amount = 0
