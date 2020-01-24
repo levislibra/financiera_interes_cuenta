@@ -151,6 +151,7 @@ class ExtendsResPartner(models.Model):
 	move_line_ids = fields.One2many('account.move.line', 'partner_id', 'Movimientos')
 	# move_ids = fields.One2many('account.move', '' 'Asientos fin de mes')
 	date_first_move = fields.Date('Primer movimiento', compute='_compute_date_first_move')
+	date_last_move = fields.Date('Ultimo movimiento')
 	compute_fin_mes = fields.Boolean('Movimientos de fin de mes', default=False)
 	journal_fin_de_mes = fields.Many2one('account.journal', 'Diario de saldos')
 	capitalization = fields.Selection([('diaria', 'Diaria'), ('mensual', 'Mensual'), ('saldo', 'Saldo Previo')], string='Capitalizacion', required=True, default='mensual')
@@ -177,7 +178,10 @@ class ExtendsResPartner(models.Model):
 		if self.date_first_move != False:
 			date_first_move = datetime.strptime(self.date_first_move, "%Y-%m-%d")
 			date_finish_month = date_month = datetime(date_first_move.year, date_first_move.month, calendar.monthrange(date_first_move.year, date_first_move.month)[1])
-			current_date = datetime.now()
+			date_last_move = False
+			if self.date_last_move != False:
+				date_last_move = datetime.strptime(self.date_last_move, "%Y-%m-%d")
+			current_date = date_last_move or datetime.now()
 			while date_finish_month <= current_date:
 				move_line_obj = self.pool.get('account.move.line')
 				move_line_ids = move_line_obj.search(cr, uid, [
@@ -217,6 +221,11 @@ class ExtendsResPartner(models.Model):
 					date_finish_month = datetime(date_finish_month.year+1, 1, 31)
 				else:
 					date_finish_month = datetime(date_finish_month.year, date_finish_month.month+1, calendar.monthrange(date_finish_month.year, date_finish_month.month+1)[1])
+				if date_last_move != False and date_finish_month > date_last_move:
+					date_finish_month = date_last_move
+					date_last_move = False
+					self.date_last_move = False
+
 
 	@api.multi
 	def ver_ctacte_cliente(self):
