@@ -37,7 +37,7 @@
                 <label for="amount" string="Interes"/><h3><field name="amount" widget="monetary" options="{'currency_field': 'currency_id'}" readonly="1"/></h3>
               </group>
               <group>
-                <field name="capitalization" readonly="1"/>
+                <!-- <field name="capitalization" readonly="1"/> -->
                 <field name="rate_per_day" readonly="1"/>
                 <field name="vat_tax" readonly="1"/>
                 <field name="vat_tax_id" attrs="{'readonly': True, 'invisible': [('vat_tax', '=', False)]}"/>
@@ -55,9 +55,9 @@
                     <field name="total_balance_receivable" readonly="1"/>
                     <field name="interes_computado" readonly="1"/>
                     <field name="dias" readonly="1"/>
-                    <field name="balance_anterior" readonly="1"/>
+                    <!-- <field name="balance_anterior" readonly="1"/>
                     <field name="interes_no_consolidado_acumulado_backup" readonly="1"/>
-                    <field name="interes_no_consolidado_amount_backup" readonly="1"/>
+                    <field name="interes_no_consolidado_amount_backup" readonly="0"/> -->
                   </tree>
                 </field>
               </page>
@@ -106,7 +106,7 @@
               <field name="automatic_validate"/>
               <field name="vat_tax"/>
               <field name="vat_tax_id"/>
-              <field name="capitalization" required="1"/>
+              <!-- <field name="capitalization" required="1"/> -->
               <field name="rate_per_day" required="1"/>
             </group>
           </sheet>
@@ -135,14 +135,14 @@
         <xpath expr="//page[3]" position='before'>
           <page string='Interes en cuenta'>
             <group string="Informacion por defecto">
-              <field name="last_date_compute_interes"/>
-              <field name="date_first_move"/>
-              <field name="capitalization"/>
+              <!-- <field name="last_date_compute_interes"/> -->
+              <!-- <field name="date_first_move"/> -->
+              <!-- <field name="capitalization"/> -->
               <field name="rate_per_day"/>
-              <field name="compute_fin_mes"/>
-              <field name="journal_fin_de_mes" attrs="{'invisible': [('compute_fin_mes', '=', False)], 'required': [('compute_fin_mes', '=', True)]}"/>
-              <field name="date_last_move"/>
-              <label for="create_move_fin_de_mes" string=""/><h3><button name="create_move_fin_de_mes" string="Crear movimiento de fin de mes" type="object"/></h3>
+              <!-- <field name="compute_fin_mes"/> -->
+              <!-- <field name="journal_fin_de_mes" attrs="{'invisible': [('compute_fin_mes', '=', False)], 'required': [('compute_fin_mes', '=', True)]}"/> -->
+              <!-- <field name="date_last_move"/> -->
+              <!-- <label for="create_move_fin_de_mes" string=""/><h3><button name="create_move_fin_de_mes" string="Crear movimiento de fin de mes" type="object"/></h3> -->
             </group>
           </page>
         </xpath>
@@ -160,7 +160,8 @@
       <field name="arch" type="xml">
         <xpath expr="//field[@name='total_balance_receivable']" position="after">
           <field name="interes_no_consolidado_amount" sum="Intereses"/>
-          <field name="interes_computado" readonly="1"/>
+          <field name="dias" readonly="1"/>
+          <field name="interes_computado" readonly="0"/>
         </xpath>
       </field>
     </record>

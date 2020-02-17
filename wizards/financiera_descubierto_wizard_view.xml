@@ -10,6 +10,7 @@
                     <group>
                         <field name="date_invoice"/>
                         <field name="journal_id" domain="[('type', '=', 'sale')]" required="1"/>
+                        <field name="add_date_adicional"/>
                     </group>
                     <group>
                     </group>

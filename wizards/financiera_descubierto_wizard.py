@@ -10,9 +10,11 @@ class FinancieraDescubiertoWizard(models.TransientModel):
 	_name = 'financiera.descubierto.wizard'
 
 	descubierto_id = fields.Many2one('financiera.descubierto', string='Descubierto')
-	date_invoice = fields.Date('Fecha', required=True, default=lambda *a: time.strftime('%Y-%m-%d'))
+	date_invoice = fields.Date('Fecha de la factura', required=True, default=lambda *a: time.strftime('%Y-%m-%d'))
 	journal_id = fields.Many2one('account.journal', string='Diario de Factura')
 	use_documents = fields.Boolean('Usa Documento', related='journal_id.use_documents', readonly=True)
+	add_date_adicional = fields.Boolean('Calcular interes hasta fecha de la factura')
+	# date_adicional = fields.Date('Fecha particular', default=lambda *a: time.strftime('%Y-%m-%d'))
 
 	@api.model
 	def default_get(self, fields):
@@ -29,6 +31,16 @@ class FinancieraDescubiertoWizard(models.TransientModel):
 		active_ids = context.get('active_ids')
 		active_id = context.get('active_id')
 		partner_id = self.env['account.move.line'].browse(active_id).partner_id
+		interes_adicional = 0
+		dias = 0
+		if self.add_date_adicional:
+			prev_line_id = self.env['account.move.line'].browse(active_ids[0])
+			date_start = datetime.strptime(prev_line_id.date, "%Y-%m-%d")
+			date_finish = datetime.strptime(self.date_invoice, "%Y-%m-%d")
+			dias = date_finish - date_start
+			dias = dias.days
+			if dias > 0 and prev_line_id.total_balance_receivable > 0:
+				interes_adicional = partner_id.rate_per_day * dias * prev_line_id.total_balance_receivable
 		fd_values = {
 			'partner_id': partner_id.id,
 			'date_invoice': self.date_invoice,
@@ -41,7 +53,14 @@ class FinancieraDescubiertoWizard(models.TransientModel):
 			line_id = self.env['account.move.line'].browse(_id)
 			amount += line_id.interes_no_consolidado_amount
 			line_id.interes_computado = True
-		descubierto_id.generate_invoice(self.date_invoice, amount)
+		amount += interes_adicional
+		new_invoice_id = descubierto_id.generate_invoice(self.date_invoice, amount)
+		if interes_adicional > 0:
+			for line_id in new_invoice_id.move_id.line_ids:
+				if line_id.account_id.id == partner_id.property_account_receivable_id.id:
+					line_id.interes_computado = True
+					line_id.interes_no_consolidado_amount = interes_adicional
+					line_id.dias = dias
 		descubierto_id.state = 'confirmado'
 
 	@api.multi
