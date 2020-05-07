@@ -51,7 +51,8 @@ class FinancieraDescubiertoWizard(models.TransientModel):
 		amount = 0
 		for _id in active_ids:
 			line_id = self.env['account.move.line'].browse(_id)
-			amount += line_id.interes_no_consolidado_amount
+			if not line_id.interes_computado:
+				amount += line_id.interes_no_consolidado_amount
 			line_id.interes_computado = True
 		amount += interes_adicional
 		new_invoice_id = descubierto_id.generate_invoice(self.date_invoice, amount)
